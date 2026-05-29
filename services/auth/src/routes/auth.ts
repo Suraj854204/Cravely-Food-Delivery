@@ -10,9 +10,6 @@ import {
 
 const router = express.Router();
 
-/* =========================================
-   AUTH ROUTES
-========================================= */
 router.post("/signup", signupUser);
 
 router.post("/login", loginWithEmail);

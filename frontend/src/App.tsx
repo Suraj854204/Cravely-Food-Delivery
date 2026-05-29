@@ -1,81 +1,59 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import SelectRole from "./pages/SelectRole";
+
+//import Navbar from "./components/Navbar";
+
+import PublicRoute from "./components/publicRoute";
+import ProtectedRoute from "./components/protectedRoute";
 
 import { Toaster } from "react-hot-toast";
 import { useAppData } from "./context/AppContext";
 
-/* ─── Protect routes that require login ─── */
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuth } = useAppData();
-  return isAuth ? <>{children}</> : <Navigate to="/login" replace />;
-};
-
-/* ─── Redirect logged-in users away from auth pages ─── */
-const GuestRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuth } = useAppData();
-  return isAuth ? <Navigate to="/" replace /> : <>{children}</>;
-};
-
 const App = () => {
+  const { loading } = useAppData();
+
+  if (loading) {
+    return (
+      <h1 className="text-2xl font-bold text-red-500 text-center mt-56">
+        Loading...
+      </h1>
+    );
+  }
+
   return (
     <BrowserRouter>
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          style: {
-            background: "#111827",
-            color: "#fff",
-            border: "1px solid rgba(255,255,255,0.1)",
-          },
-        }}
-      />
+      {/* <Navbar /> */}
 
       <Routes>
-        {/* Protected */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          }
-        />
+        {/* Public Routes */}
+        <Route element={<PublicRoute />}>
+          <Route path="/login" element={<Login />} />
 
-        {/* Guest only */}
-        <Route
-          path="/login"
-          element={
-            <GuestRoute>
-              <Login />
-            </GuestRoute>
-          }
-        />
+          <Route
+            path="/forgot-password"
+            element={<ForgotPassword />}
+          />
 
-        <Route
-          path="/forgot-password"
-          element={
-            <GuestRoute>
-              <ForgotPassword />
-            </GuestRoute>
-          }
-        />
+          <Route
+            path="/reset-password/:token"
+            element={<ResetPassword />}
+          />
+        </Route>
 
-        <Route
-          path="/reset-password/:token"
-          element={
-            <GuestRoute>
-              <ResetPassword />
-            </GuestRoute>
-          }
-        />
+        {/* Protected Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<Home />} />
+        </Route>
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/select-role" element={<SelectRole />} />
       </Routes>
+
+      <Toaster position="top-right" />
     </BrowserRouter>
   );
 };
