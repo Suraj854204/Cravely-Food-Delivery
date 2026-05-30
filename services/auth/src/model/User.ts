@@ -1,24 +1,13 @@
-import mongoose, {
-  Document,
-  Schema,
-} from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
 
-export interface IUser
-  extends Document {
+export interface IUser extends Document {
   name: string;
-
   email: string;
-
   password?: string;
-
   image?: string;
-
   provider: string;
-
-  role: string;
-
+  role?: string;                   // optional — can be unset
   resetPasswordToken?: string;
-
   resetPasswordExpire?: Date;
 }
 
@@ -28,47 +17,37 @@ const schema = new Schema<IUser>(
       type: String,
       required: true,
     },
-
     email: {
       type: String,
       required: true,
       unique: true,
     },
-
     password: {
       type: String,
       default: null,
     },
-
-    resetPasswordToken: {
-      type: String,
-      default: null,
-    },
-
-    resetPasswordExpire: {
-      type: Date,
-      default: null,
-    },
-
     image: {
       type: String,
       default: null,
     },
-
     provider: {
       type: String,
       enum: ["google", "email"],
       default: "email",
     },
-
     role: {
       type: String,
-      enum: [
-        "customer",
-        "admin",
-        "rider",
-      ],
-      default: "customer",
+      enum: ["customer", "Rider", "Seller"],
+      default: null,              
+      required: false,
+    },
+    resetPasswordToken: {
+      type: String,
+      default: null,
+    },
+    resetPasswordExpire: {
+      type: Date,
+      default: null,
     },
   },
   {
@@ -76,9 +55,6 @@ const schema = new Schema<IUser>(
   }
 );
 
-const User = mongoose.model<IUser>(
-  "User",
-  schema
-);
+const User = mongoose.model<IUser>("User", schema);
 
 export default User;

@@ -1,4 +1,4 @@
-import mongoose, { Schema, } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 const schema = new Schema({
     name: {
         type: String,
@@ -13,14 +13,6 @@ const schema = new Schema({
         type: String,
         default: null,
     },
-    resetPasswordToken: {
-        type: String,
-        default: null,
-    },
-    resetPasswordExpire: {
-        type: Date,
-        default: null,
-    },
     image: {
         type: String,
         default: null,
@@ -32,12 +24,17 @@ const schema = new Schema({
     },
     role: {
         type: String,
-        enum: [
-            "customer",
-            "admin",
-            "rider",
-        ],
-        default: "customer",
+        enum: ["customer", "Rider", "Seller"],
+        default: null,
+        required: false,
+    },
+    resetPasswordToken: {
+        type: String,
+        default: null,
+    },
+    resetPasswordExpire: {
+        type: Date,
+        default: null,
     },
 }, {
     timestamps: true,

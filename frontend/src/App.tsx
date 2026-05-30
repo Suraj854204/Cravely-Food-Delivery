@@ -6,8 +6,6 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import SelectRole from "./pages/SelectRole";
 
-//import Navbar from "./components/Navbar";
-
 import PublicRoute from "./components/publicRoute";
 import ProtectedRoute from "./components/protectedRoute";
 
@@ -27,30 +25,30 @@ const App = () => {
 
   return (
     <BrowserRouter>
-      {/* <Navbar /> */}
-
       <Routes>
         {/* Public Routes */}
         <Route element={<PublicRoute />}>
           <Route path="/login" element={<Login />} />
-
           <Route
             path="/forgot-password"
             element={<ForgotPassword />}
           />
-
           <Route
             path="/reset-password/:token"
             element={<ResetPassword />}
           />
         </Route>
 
+        {/* Select Role */}
+        <Route
+          path="/select-role"
+          element={<SelectRole />}
+        />
+
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Home />} />
         </Route>
-
-        <Route path="/select-role" element={<SelectRole />} />
       </Routes>
 
       <Toaster position="top-right" />

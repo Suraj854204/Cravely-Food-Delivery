@@ -1,6 +1,7 @@
+
 import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { IUser } from "../model/User.js";
+import User, { IUser } from "../model/User.js";
 
 export interface AuthenticatedRequest extends Request {
   user?: IUser | null;
@@ -14,39 +15,39 @@ export const isAuth = async (
   try {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      res.status(401).json({
-        message: "Please Login - No auth header",
-      });
+    if (!authHeader?.startsWith("Bearer ")) {
+      res.status(401).json({ message: "Please login — no auth header" });
       return;
     }
 
     const token = authHeader.split(" ")[1];
 
     if (!token) {
-      res.status(401).json({
-        message: "Please Login - Token missing",
-      });
+      res.status(401).json({ message: "Please login — token missing" });
       return;
     }
 
-    const decodedValue = jwt.verify(
+    const decoded = jwt.verify(
       token,
       process.env.JWT_SEC as string
     ) as JwtPayload;
 
-    if (!decodedValue || !decodedValue.user) {
-      res.status(401).json({
-        message: "Invalid token",
-      });
+    // All tokens are signed with { userId }, so look that up
+    if (!decoded?.userId) {
+      res.status(401).json({ message: "Invalid token" });
       return;
     }
 
-    req.user = decodedValue.user;
+    const user = await User.findById(decoded.userId).select("-password");
+
+    if (!user) {
+      res.status(401).json({ message: "User not found" });
+      return;
+    }
+
+    req.user = user;
     next();
-  } catch (error) {
-    res.status(500).json({
-      message: "Please Login - Jwt error",
-    });
+  } catch {
+    res.status(401).json({ message: "Please login — invalid token" });
   }
 };

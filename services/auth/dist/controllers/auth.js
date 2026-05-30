@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import TryCatch from "../middlewares/trycatch.js";
 import { oauth2client } from "../config/googleConfig.js";
 import axios from "axios";
+const allowedRoles = ["customer", "Rider", "Seller"];
 /* =========================================
    SIGNUP
 ========================================= */
@@ -68,7 +69,9 @@ export const googleLogin = TryCatch(async (req, res) => {
     const userRes = await axios.get(`https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${googleRes.tokens.access_token}`);
     const { email, name, picture } = userRes.data;
     if (!email) {
-        return res.status(400).json({ message: "Could not retrieve email from Google" });
+        return res
+            .status(400)
+            .json({ message: "Could not retrieve email from Google" });
     }
     let user = await User.findOne({ email });
     if (!user) {
@@ -99,8 +102,11 @@ export const forgotPassword = TryCatch(async (req, res) => {
         return res.status(400).json({ message: "Email is required" });
     }
     const user = await User.findOne({ email });
+    // Return 200 even if user not found — prevents email enumeration attacks
     if (!user) {
-        return res.status(404).json({ message: "User not found" });
+        return res
+            .status(200)
+            .json({ message: "Reset link sent if this email exists" });
     }
     const resetToken = crypto.randomBytes(32).toString("hex");
     user.resetPasswordToken = resetToken;
@@ -112,21 +118,20 @@ export const forgotPassword = TryCatch(async (req, res) => {
         to: email,
         subject: "Reset your Cravely password",
         html: `
-        <div style="font-family:Arial,sans-serif;max-width:500px;margin:auto;padding:32px;background:#0a0005;color:#fff;border-radius:16px">
-          <h1 style="color:#ffb347">Cravely</h1>
-          <h2>Reset your password</h2>
-          <p style="color:rgba(255,255,255,0.6)">Click the button below. This link expires in <strong>15 minutes</strong>.</p>
-          <a href="${resetUrl}" style="display:inline-block;margin-top:16px;padding:14px 32px;background:linear-gradient(135deg,#ff6b35,#e91e63);color:#fff;font-weight:700;text-decoration:none;border-radius:12px">
-            Reset Password
-          </a>
-          <p style="margin-top:24px;font-size:12px;color:rgba(255,255,255,0.3)">
-            If you didn't request this, ignore this email.
-          </p>
-        </div>
-      `,
+      <div style="font-family:Arial,sans-serif;max-width:500px;margin:auto;padding:32px;background:#0a0005;color:#fff;border-radius:16px">
+        <h1 style="color:#ffb347">Cravely</h1>
+        <h2>Reset your password</h2>
+        <p style="color:rgba(255,255,255,0.6)">Click the button below. This link expires in <strong>15 minutes</strong>.</p>
+        <a href="${resetUrl}" style="display:inline-block;margin-top:16px;padding:14px 32px;background:linear-gradient(135deg,#ff6b35,#e91e63);color:#fff;font-weight:700;text-decoration:none;border-radius:12px">
+          Reset Password
+        </a>
+        <p style="margin-top:24px;font-size:12px;color:rgba(255,255,255,0.3)">
+          If you didn't request this, ignore this email.
+        </p>
+      </div>
+    `,
     });
-    // ✅ FIX: Only ONE res.json() call (removed the duplicate that caused "headers already sent" crash)
-    return res.status(200).json({ message: "Reset link sent to your email" });
+    return res.status(200).json({ message: "Reset link sent if this email exists" });
 });
 /* =========================================
    RESET PASSWORD
@@ -135,7 +140,9 @@ export const resetPassword = TryCatch(async (req, res) => {
     const { token } = req.params;
     const { password } = req.body;
     if (!token || !password) {
-        return res.status(400).json({ message: "Token and new password are required" });
+        return res
+            .status(400)
+            .json({ message: "Token and new password are required" });
     }
     const user = await User.findOne({
         resetPasswordToken: token,
@@ -145,9 +152,33 @@ export const resetPassword = TryCatch(async (req, res) => {
         return res.status(400).json({ message: "Invalid or expired token" });
     }
     user.password = await bcrypt.hash(password, 10);
-    // ✅ FIX: Use undefined instead of "null as unknown as Type" casting
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
     await user.save();
     res.status(200).json({ message: "Password reset successful" });
+});
+/* =========================================
+   ADD USER ROLE
+========================================= */
+export const addUserRole = TryCatch(async (req, res) => {
+    if (!req.user?._id) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+    const { role } = req.body;
+    if (!allowedRoles.includes(role)) {
+        return res.status(400).json({ message: "Invalid role" });
+    }
+    const user = await User.findByIdAndUpdate(req.user._id, { role }, { new: true });
+    if (!user) {
+        return res.status(404).json({ message: "User not found" });
+    }
+    // Consistent with all other endpoints — sign with userId only
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SEC, { expiresIn: "15d" });
+    res.json({ user, token });
+});
+/* =========================================
+   MY PROFILE
+========================================= */
+export const myProfile = TryCatch(async (req, res) => {
+    res.json(req.user);
 });

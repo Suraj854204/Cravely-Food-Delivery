@@ -12,7 +12,7 @@ import {
 
 import {
   AppProvider,
-} from "./context/AppContext";
+} from "./context/AppContext.tsx";
 
 export const authService =
   "http://localhost:5000";
